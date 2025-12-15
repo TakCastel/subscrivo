@@ -12,7 +12,7 @@ interface Props {
   onSave: (sub: Omit<Subscription, 'id'>) => void;
   editData?: Subscription | null;
   initialDay?: number;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: string) => boolean | void; // Correction du type de retour
 }
 
 export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, editData, initialDay, onDelete }) => {
@@ -110,9 +110,15 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
     onClose();
   };
 
-  const handleDelete = () => {
+  // Correction ici : ajout de l'événement et preventDefault
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault(); // Empêche toute soumission de formulaire
+    e.stopPropagation(); // Arrête la propagation de l'événement
+
     if (editData && onDelete) {
+       // On appelle la fonction de suppression (qui déclenche le confirm dans App.tsx)
        const deleted = onDelete(editData.id);
+       // Si l'utilisateur a confirmé (true), on ferme la modale
        if (deleted) onClose();
     }
   };
@@ -322,7 +328,7 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
                         <button 
                           type="button"
                           onClick={handleDelete}
-                          className="px-5 py-4 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-2xl font-bold transition-all active:scale-95"
+                          className="px-5 py-4 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center"
                         >
                           <Trash2 size={24} />
                         </button>
