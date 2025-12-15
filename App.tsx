@@ -32,16 +32,36 @@ const AppContent = () => {
   // Initialisation paresseuse avec migration des données
   const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => {
     try {
-      // MIGRATION: Check old key first
-      const oldData = localStorage.getItem('subcal_data');
-      if (oldData) {
-        console.log("Migrating data to Velora...");
-        localStorage.setItem('velora_data', oldData);
-        localStorage.removeItem('subcal_data');
-        return JSON.parse(oldData);
+      // MIGRATION LOGIC: Submeez -> Velora -> Subcal -> Subscrivo
+
+      // 1. Check Submeez (Most recent previous name)
+      const oldSubmeez = localStorage.getItem('submeez_data');
+      if (oldSubmeez) {
+        console.log("Migrating data from Submeez to Subscrivo...");
+        localStorage.setItem('subscrivo_data', oldSubmeez);
+        localStorage.removeItem('submeez_data');
+        return JSON.parse(oldSubmeez);
       }
 
-      const saved = localStorage.getItem('velora_data');
+      // 2. Check Velora
+      const oldVelora = localStorage.getItem('velora_data');
+      if (oldVelora) {
+        console.log("Migrating data from Velora to Subscrivo...");
+        localStorage.setItem('subscrivo_data', oldVelora);
+        localStorage.removeItem('velora_data');
+        return JSON.parse(oldVelora);
+      }
+
+      // 3. Check Subcal
+      const oldSubcal = localStorage.getItem('subcal_data');
+      if (oldSubcal) {
+        console.log("Migrating data from Subcal to Subscrivo...");
+        localStorage.setItem('subscrivo_data', oldSubcal);
+        localStorage.removeItem('subcal_data');
+        return JSON.parse(oldSubcal);
+      }
+
+      const saved = localStorage.getItem('subscrivo_data');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       console.error("Failed to parse subscriptions", e);
@@ -57,15 +77,22 @@ const AppContent = () => {
   const [subToDelete, setSubToDelete] = useState<string | null>(null);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    // MIGRATION: Check old theme
-    const oldTheme = localStorage.getItem('subcal_theme') as 'light' | 'dark';
-    if (oldTheme) {
-        localStorage.setItem('velora_theme', oldTheme);
-        localStorage.removeItem('subcal_theme');
-        return oldTheme;
+    // MIGRATION THEME
+    const oldSubmeezTheme = localStorage.getItem('submeez_theme') as 'light' | 'dark';
+    if (oldSubmeezTheme) {
+        localStorage.setItem('subscrivo_theme', oldSubmeezTheme);
+        localStorage.removeItem('submeez_theme');
+        return oldSubmeezTheme;
     }
 
-    const savedTheme = localStorage.getItem('velora_theme') as 'light' | 'dark';
+    const oldVeloraTheme = localStorage.getItem('velora_theme') as 'light' | 'dark';
+    if (oldVeloraTheme) {
+        localStorage.setItem('subscrivo_theme', oldVeloraTheme);
+        localStorage.removeItem('velora_theme');
+        return oldVeloraTheme;
+    }
+
+    const savedTheme = localStorage.getItem('subscrivo_theme') as 'light' | 'dark';
     if (savedTheme) return savedTheme;
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
     return 'light';
@@ -74,7 +101,7 @@ const AppContent = () => {
   const [showCountryMenu, setShowCountryMenu] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('velora_data', JSON.stringify(subscriptions));
+    localStorage.setItem('subscrivo_data', JSON.stringify(subscriptions));
   }, [subscriptions]);
 
   useEffect(() => {
@@ -83,7 +110,7 @@ const AppContent = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('velora_theme', theme);
+    localStorage.setItem('subscrivo_theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -153,9 +180,9 @@ const AppContent = () => {
           <div className="flex justify-between items-center h-14">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-black dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-black font-extrabold text-xl shadow-lg shadow-black/10 dark:shadow-white/10 group cursor-default">
-                <span className="group-hover:scale-110 transition-transform duration-300">V.</span>
+                <span className="group-hover:scale-110 transition-transform duration-300">S.</span>
               </div>
-              <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight hidden sm:block">Velora</h1>
+              <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight hidden sm:block">Subscrivo</h1>
             </div>
             
             <div className="flex items-center gap-2 sm:gap-4 bg-white dark:bg-zinc-900 p-1.5 rounded-full shadow-sm border border-zinc-200 dark:border-zinc-800">
@@ -182,31 +209,26 @@ const AppContent = () => {
                           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Select Region</span>
                         </div>
                         <div className="max-h-[300px] overflow-y-auto scroll-smooth custom-scrollbar px-2">
-                        {COUNTRIES.map(c => (
-                        <button
+                        {COUNTRIES.map((c) => (
+                          <button
                             key={c.code}
                             onClick={() => {
                               setCountry(c.code);
                               setShowCountryMenu(false);
                             }}
-                            className={`w-full text-left px-3 py-3 rounded-2xl flex items-center gap-3 transition-all ${country === c.code ? 'bg-zinc-100 dark:bg-zinc-800' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`}
-                        >
-                            <img 
-                                src={getFlagUrl(c.code)} 
-                                alt={c.name}
-                                className="w-8 h-8 object-cover rounded-full shadow-sm"
-                            />
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-center">
-                                    <span className={`text-sm font-bold truncate ${country === c.code ? 'text-zinc-900 dark:text-white' : 'text-zinc-600 dark:text-zinc-400'}`}>
-                                        {c.name}
-                                    </span>
-                                </div>
-                                <span className="text-xs text-zinc-400 font-medium">
-                                    {c.currency} · {c.currencyCode}
-                                </span>
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                              country === c.code 
+                                ? 'bg-zinc-100 dark:bg-zinc-800' 
+                                : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                            }`}
+                          >
+                            <img src={getFlagUrl(c.code)} alt={c.name} className="w-6 h-6 rounded-full object-cover" />
+                            <div className="text-left">
+                                <span className="block text-sm font-bold text-zinc-900 dark:text-white">{c.name}</span>
+                                <span className="block text-xs text-zinc-400 font-medium">{c.currencyCode} ({c.currency})</span>
                             </div>
-                        </button>
+                            {country === c.code && <div className="ml-auto w-2 h-2 rounded-full bg-zinc-900 dark:bg-white" />}
+                          </button>
                         ))}
                         </div>
                     </div>
@@ -214,21 +236,20 @@ const AppContent = () => {
                 )}
               </div>
 
-              <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-700"></div>
+              <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800" />
 
               <button 
                 onClick={toggleTheme}
-                className="p-2 rounded-full text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition-colors"
               >
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
               </button>
 
               <button 
                 onClick={openAdd}
-                className="bg-zinc-900 dark:bg-white hover:bg-black dark:hover:bg-zinc-200 text-white dark:text-zinc-900 w-9 h-9 sm:w-auto sm:px-4 sm:py-2 rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-zinc-900/10 active:scale-95"
+                className="p-2 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full hover:scale-105 transition-transform shadow-lg shadow-zinc-900/20"
               >
-                <Plus size={18} />
-                <span className="hidden sm:inline">Add</span>
+                <Plus size={20} strokeWidth={3} />
               </button>
             </div>
           </div>
@@ -236,58 +257,51 @@ const AppContent = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Navigation & Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col">
-             <h2 className="text-4xl font-extrabold text-zinc-900 dark:text-white capitalize tracking-tighter">
-                {currentDate.toLocaleDateString(dateLocale, { month: 'long' })}
-            </h2>
-            <span className="text-zinc-400 dark:text-zinc-500 font-medium text-lg">
-                {currentDate.toLocaleDateString(dateLocale, { year: 'numeric' })}
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2 self-start sm:self-center bg-white dark:bg-zinc-900 rounded-full p-1.5 shadow-sm border border-zinc-200 dark:border-zinc-800">
-            <button 
-              onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-              className="w-10 h-10 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-400 transition-colors"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <span className="text-sm font-bold w-24 text-center text-zinc-900 dark:text-white">
-                {currentDate.toLocaleDateString(dateLocale, { month: 'short' })}
-            </span>
-            <button 
-              onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-              className="w-10 h-10 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-600 dark:text-zinc-400 transition-colors"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
+        
+        {/* Stats Section */}
+        <section>
+          <Stats subscriptions={subscriptions} currentDate={currentDate} />
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+           {/* Left Column: Calendar */}
+           <div className="lg:col-span-8 space-y-6">
+              <div className="flex items-center justify-between px-2">
+                 <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
+                    {currentDate.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })}
+                 </h2>
+                 <div className="flex gap-2">
+                    <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition-colors">
+                        <ChevronLeft size={20} />
+                    </button>
+                    <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition-colors">
+                        <ChevronRight size={20} />
+                    </button>
+                 </div>
+              </div>
+
+              <Calendar 
+                currentDate={currentDate} 
+                subscriptions={subscriptions} 
+                onEdit={openEdit}
+                onAdd={openAddFromCalendar}
+                onMoveSubscription={handleMoveSubscription}
+              />
+           </div>
+
+           {/* Right Column: List */}
+           <div className="lg:col-span-4">
+              <SubscriptionList 
+                subscriptions={subscriptions} 
+                onEdit={openEdit} 
+                onDelete={handleDeleteRequest}
+              />
+           </div>
         </div>
 
-        <Stats subscriptions={subscriptions} currentDate={currentDate} />
-
-        <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Calendar 
-              currentDate={currentDate} 
-              subscriptions={subscriptions}
-              onEdit={openEdit}
-              onAdd={openAddFromCalendar}
-              onMoveSubscription={handleMoveSubscription}
-            />
-          </div>
-          <div className="lg:col-span-1">
-            <SubscriptionList 
-              subscriptions={subscriptions} 
-              onEdit={openEdit}
-              onDelete={handleDeleteRequest}
-            />
-          </div>
-        </div>
       </main>
 
+      {/* Modals */}
       <SubscriptionForm 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -302,16 +316,17 @@ const AppContent = () => {
         onClose={() => setSubToDelete(null)}
         onConfirm={confirmDelete}
       />
+
     </div>
   );
 };
 
-function App() {
+const App = () => {
   return (
     <LanguageProvider>
       <AppContent />
     </LanguageProvider>
   );
-}
+};
 
 export default App;

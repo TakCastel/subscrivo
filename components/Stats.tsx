@@ -3,6 +3,7 @@ import { Subscription, Recurrence } from '../types';
 import { Wallet, TrendingUp, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
+import { ServiceLogo } from './ServiceLogo';
 
 interface StatsProps {
   subscriptions: Subscription[];
@@ -139,13 +140,15 @@ export const Stats: React.FC<StatsProps> = ({ subscriptions, currentDate }) => {
         <div className="mt-auto">
           {stats.nextPayment ? (
             <div className="flex items-center gap-4 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800/50">
-               {stats.nextPayment.sub.logo ? (
-                  <img src={stats.nextPayment.sub.logo} alt="" className="w-10 h-10 rounded-xl object-contain bg-white p-1" />
-               ) : (
-                  <div className="w-10 h-10 rounded-xl bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center font-bold text-zinc-500 text-xs">
-                     {stats.nextPayment.sub.name.substring(0,2)}
-                  </div>
-               )}
+               <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-sm border border-zinc-100 dark:border-zinc-800 p-1 flex-shrink-0">
+                  <ServiceLogo 
+                    name={stats.nextPayment.sub.name} 
+                    logo={stats.nextPayment.sub.logo} 
+                    domain={stats.nextPayment.sub.domain}
+                    color={stats.nextPayment.sub.color} 
+                    className="w-full h-full object-contain"
+                  />
+               </div>
                <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline">
                     <h4 className="font-bold text-zinc-900 dark:text-white truncate pr-2">{stats.nextPayment.sub.name}</h4>

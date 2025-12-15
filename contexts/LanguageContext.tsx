@@ -387,16 +387,37 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [country, setCountry] = useState<CountryCode>('FR');
 
   useEffect(() => {
-    // MIGRATION: Check old key
-    const old = localStorage.getItem('subcal_country') as CountryCode;
-    if (old) {
-        localStorage.setItem('velora_country', old);
+    // MIGRATION LOGIC: Check old keys from previous names (Velora, Submeez, Subcal)
+    
+    // 1. Try migration from Submeez (most recent)
+    const oldSubmeez = localStorage.getItem('submeez_country') as CountryCode;
+    if (oldSubmeez) {
+        localStorage.setItem('subscrivo_country', oldSubmeez);
+        localStorage.removeItem('submeez_country');
+        setCountry(oldSubmeez);
+        return;
+    }
+
+    // 2. Try migration from Velora
+    const oldVelora = localStorage.getItem('velora_country') as CountryCode;
+    if (oldVelora) {
+        localStorage.setItem('subscrivo_country', oldVelora);
+        localStorage.removeItem('velora_country');
+        setCountry(oldVelora);
+        return;
+    }
+
+    // 3. Try migration from older Subcal
+    const oldSubcal = localStorage.getItem('subcal_country') as CountryCode;
+    if (oldSubcal) {
+        localStorage.setItem('subscrivo_country', oldSubcal);
         localStorage.removeItem('subcal_country');
-        setCountry(old);
+        setCountry(oldSubcal);
         return;
     }
     
-    const saved = localStorage.getItem('velora_country') as CountryCode;
+    // 4. Load current Subscrivo key
+    const saved = localStorage.getItem('subscrivo_country') as CountryCode;
     if (saved && COUNTRIES.find(c => c.code === saved)) {
       setCountry(saved);
     } 
@@ -404,7 +425,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const handleSetCountry = (code: CountryCode) => {
     setCountry(code);
-    localStorage.setItem('velora_country', code);
+    localStorage.setItem('subscrivo_country', code);
   };
 
   const t = (key: TranslationKey): string => {
