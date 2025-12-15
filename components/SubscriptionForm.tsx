@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Subscription, Category, PresetService } from '../types';
+import { Subscription, Category, PresetService, Recurrence } from '../types';
 import { PRESET_SERVICES } from '../constants';
-import { X, Check, Search, ChevronDown, Trash2 } from 'lucide-react';
+import { X, Check, Search, ChevronDown, Trash2, Calendar as CalendarIcon, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ServiceLogo } from './ServiceLogo';
@@ -12,7 +12,7 @@ interface Props {
   onSave: (sub: Omit<Subscription, 'id'>) => void;
   editData?: Subscription | null;
   initialDay?: number;
-  onDelete?: (id: string) => boolean | void; // Correction du type de retour
+  onDelete?: (id: string) => void;
 }
 
 export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, editData, initialDay, onDelete }) => {
@@ -21,6 +21,7 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [day, setDay] = useState('1');
+  const [recurrence, setRecurrence] = useState<Recurrence>(Recurrence.MONTHLY);
   const [category, setCategory] = useState<Category>(Category.OTHER);
   const [logo, setLogo] = useState<string | undefined>(undefined);
   const [domain, setDomain] = useState<string | undefined>(undefined);
@@ -35,6 +36,7 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
         setName(editData.name);
         setPrice(editData.price.toString());
         setDay(editData.day.toString());
+        setRecurrence(editData.recurrence || Recurrence.MONTHLY);
         setCategory(editData.category);
         setLogo(editData.logo);
         setDomain(editData.domain);
@@ -51,6 +53,7 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
     setName('');
     setPrice('');
     setDay(new Date().getDate().toString());
+    setRecurrence(Recurrence.MONTHLY);
     setCategory(Category.OTHER);
     setLogo(undefined);
     setDomain(undefined);
@@ -94,6 +97,19 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
     }
   };
 
+  const handleRecurrenceChange = (newRecurrence: Recurrence) => {
+    setRecurrence(newRecurrence);
+    // Adjust day value when switching types
+    if (newRecurrence === Recurrence.WEEKLY) {
+      // Default to Monday (1) or current weekday
+      const currentDay = new Date().getDay();
+      setDay(currentDay.toString());
+    } else {
+      // Default to 1st or current date
+      setDay(new Date().getDate().toString());
+    }
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !price || !day) return;
@@ -102,6 +118,7 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
       name,
       price: parseFloat(price.replace(',', '.')),
       day: parseInt(day),
+      recurrence,
       category,
       color,
       logo,
@@ -110,16 +127,14 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
     onClose();
   };
 
-  // Correction ici : ajout de l'événement et preventDefault
   const handleDelete = (e: React.MouseEvent) => {
-    e.preventDefault(); // Empêche toute soumission de formulaire
-    e.stopPropagation(); // Arrête la propagation de l'événement
+    e.preventDefault();
+    e.stopPropagation();
 
     if (editData && onDelete) {
-       // On appelle la fonction de suppression (qui déclenche le confirm dans App.tsx)
-       const deleted = onDelete(editData.id);
-       // Si l'utilisateur a confirmé (true), on ferme la modale
-       if (deleted) onClose();
+       // We just request delete here. The parent app will show the modal
+       // and close this form if confirmed.
+       onDelete(editData.id);
     }
   };
 
@@ -277,7 +292,22 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
                         />
                     </div>
 
+                    {/* Frequency & Price Row */}
                     <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">{t('form.recurrence_label')}</label>
+                        <div className="relative">
+                          <select
+                              className="w-full px-5 py-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl focus:ring-0 focus:bg-zinc-200 dark:focus:bg-zinc-800 text-zinc-900 dark:text-white font-bold appearance-none cursor-pointer transition-all"
+                              value={recurrence}
+                              onChange={(e) => handleRecurrenceChange(e.target.value as Recurrence)}
+                          >
+                              <option value={Recurrence.MONTHLY}>{t('rec.monthly')}</option>
+                              <option value={Recurrence.WEEKLY}>{t('rec.weekly')}</option>
+                          </select>
+                          <ChevronDown className="absolute right-5 top-5 text-zinc-400 pointer-events-none" size={18} />
+                        </div>
+                      </div>
                       <div>
                         <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">{t('form.price_label')}</label>
                         <div className="relative">
@@ -293,17 +323,45 @@ export const SubscriptionForm: React.FC<Props> = ({ isOpen, onClose, onSave, edi
                             <span className="absolute right-5 top-5 text-zinc-400 font-bold">{config.currency}</span>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Date / Day Row */}
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">{t('form.day_label')}</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="31"
-                          required
-                          className="w-full px-5 py-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl focus:ring-0 focus:bg-zinc-200 dark:focus:bg-zinc-800 text-zinc-900 dark:text-white font-bold text-lg transition-all"
-                          value={day}
-                          onChange={(e) => setDay(e.target.value)}
-                        />
+                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">
+                          {recurrence === Recurrence.MONTHLY ? t('form.day_label') : t('form.weekday_label')}
+                        </label>
+                        {recurrence === Recurrence.MONTHLY ? (
+                          <div className="relative">
+                             <input
+                              type="number"
+                              min="1"
+                              max="31"
+                              required
+                              className="w-full pl-5 py-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl focus:ring-0 focus:bg-zinc-200 dark:focus:bg-zinc-800 text-zinc-900 dark:text-white font-bold text-lg transition-all"
+                              value={day}
+                              onChange={(e) => setDay(e.target.value)}
+                            />
+                            <CalendarIcon className="absolute right-5 top-5 text-zinc-400 pointer-events-none" size={18} />
+                          </div>
+                        ) : (
+                          <div className="relative">
+                             <select
+                                className="w-full px-5 py-4 bg-zinc-100 dark:bg-zinc-900 border-none rounded-2xl focus:ring-0 focus:bg-zinc-200 dark:focus:bg-zinc-800 text-zinc-900 dark:text-white font-bold appearance-none cursor-pointer transition-all"
+                                value={day}
+                                onChange={(e) => setDay(e.target.value)}
+                             >
+                                <option value="1">{t('day.1')}</option>
+                                <option value="2">{t('day.2')}</option>
+                                <option value="3">{t('day.3')}</option>
+                                <option value="4">{t('day.4')}</option>
+                                <option value="5">{t('day.5')}</option>
+                                <option value="6">{t('day.6')}</option>
+                                <option value="0">{t('day.0')}</option>
+                             </select>
+                             <ChevronDown className="absolute right-5 top-5 text-zinc-400 pointer-events-none" size={18} />
+                          </div>
+                        )}
                       </div>
                     </div>
 

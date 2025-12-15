@@ -1,7 +1,7 @@
 import React from 'react';
-import { Subscription } from '../types';
+import { Subscription, Recurrence } from '../types';
 import { CATEGORY_COLORS } from '../constants';
-import { Trash2, Edit2, ChevronRight } from 'lucide-react';
+import { Edit2, ChevronRight, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ServiceLogo } from './ServiceLogo';
@@ -15,8 +15,25 @@ interface Props {
 export const SubscriptionList: React.FC<Props> = ({ subscriptions, onEdit, onDelete }) => {
   const { t, config, getCategoryLabel, dateLocale } = useLanguage();
   
-  const sortedSubs = [...subscriptions].sort((a, b) => a.day - b.day);
+  // Sort Logic: Monthly by date, Weekly by day of week
+  const sortedSubs = [...subscriptions].sort((a, b) => {
+    // Basic sorting for now, can be improved to mix monthly/weekly visually
+    if (a.recurrence === b.recurrence) return a.day - b.day;
+    return a.recurrence === Recurrence.WEEKLY ? 1 : -1;
+  });
+  
   const formatMoney = (num: number) => new Intl.NumberFormat(dateLocale, { style: 'currency', currency: config.currencyCode }).format(num);
+
+  const getDayLabel = (sub: Subscription) => {
+    if (sub.recurrence === Recurrence.WEEKLY) {
+        // day 0 = Sunday, 1 = Monday
+        const d = new Date();
+        // Reset to a known Sunday
+        d.setDate(d.getDate() - d.getDay() + sub.day);
+        return `${t('list.every')} ${d.toLocaleDateString(dateLocale, { weekday: 'long' })}`;
+    }
+    return `${t('list.on')} ${sub.day}`;
+  };
 
   return (
     <div className="sticky top-24">
@@ -35,7 +52,7 @@ export const SubscriptionList: React.FC<Props> = ({ subscriptions, onEdit, onDel
             <p className="text-zinc-500 text-sm">{t('list.empty_desc')}</p>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
+          <div className="divide-y divide-zinc-50 dark:divide-zinc-800 max-h-[600px] overflow-y-auto custom-scrollbar">
             <AnimatePresence>
               {sortedSubs.map((sub, i) => (
                 <motion.div 
@@ -61,7 +78,10 @@ export const SubscriptionList: React.FC<Props> = ({ subscriptions, onEdit, onDel
                     <div className="min-w-0">
                       <h4 className="font-bold text-zinc-900 dark:text-white text-sm truncate">{sub.name}</h4>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs font-medium text-zinc-400">{t('list.on')} {sub.day}</span>
+                        <span className="text-xs font-medium text-zinc-400 flex items-center gap-1">
+                             {sub.recurrence === Recurrence.WEEKLY && <Repeat size={10} />}
+                             {getDayLabel(sub)}
+                        </span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${CATEGORY_COLORS[sub.category] || 'bg-zinc-100 text-zinc-500'}`}>
                           {getCategoryLabel(sub.category)}
                         </span>
@@ -70,9 +90,14 @@ export const SubscriptionList: React.FC<Props> = ({ subscriptions, onEdit, onDel
                   </div>
                   
                   <div className="flex items-center gap-4">
-                    <span className="font-extrabold text-zinc-900 dark:text-white text-sm">
-                      {formatMoney(sub.price)}
-                    </span>
+                    <div className="text-right">
+                        <span className="font-extrabold text-zinc-900 dark:text-white text-sm block">
+                        {formatMoney(sub.price)}
+                        </span>
+                        {sub.recurrence === Recurrence.WEEKLY && (
+                            <span className="text-[10px] text-zinc-400 font-medium">/ {t('rec.weekly').toLowerCase().slice(0, 4)}</span>
+                        )}
+                    </div>
                     <ChevronRight size={16} className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors" />
                   </div>
                 </motion.div>

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Subscription } from '../types';
+import { Subscription, Recurrence } from '../types';
 import { Wallet, TrendingUp, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -17,26 +17,45 @@ export const Stats: React.FC<StatsProps> = ({ subscriptions, currentDate }) => {
     let totalCost = 0;
     let paidThisMonth = 0;
     let remainingThisMonth = 0;
-    let nextPayment: Subscription | null = null;
+    let nextPayment: { sub: Subscription, date: number } | null = null;
     let minDiff = 32;
 
-    subscriptions.forEach(sub => {
-      totalCost += sub.price;
+    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    
+    // Iterate through every day of the displayed month to calculate true cost
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+        const dayOfWeek = dateObj.getDay();
 
-      if (sub.day < currentDay) {
-        paidThisMonth += sub.price;
-      } else {
-        remainingThisMonth += sub.price;
-        const diff = sub.day - currentDay;
-        if (diff >= 0 && diff < minDiff) {
-          minDiff = diff;
-          nextPayment = sub;
-        }
-      }
-    });
+        subscriptions.forEach(sub => {
+            let matches = false;
+            
+            if (sub.recurrence === Recurrence.WEEKLY) {
+                if (sub.day === dayOfWeek) matches = true;
+            } else {
+                // Monthly
+                if (sub.day === d) matches = true;
+            }
+
+            if (matches) {
+                totalCost += sub.price;
+                if (d < currentDay) {
+                    paidThisMonth += sub.price;
+                } else {
+                    remainingThisMonth += sub.price;
+                    const diff = d - currentDay;
+                    // Find nearest next payment
+                    if (diff >= 0 && diff < minDiff) {
+                        minDiff = diff;
+                        nextPayment = { sub, date: d };
+                    }
+                }
+            }
+        });
+    }
 
     return { totalCost, paidThisMonth, remainingThisMonth, nextPayment };
-  }, [subscriptions, currentDay]);
+  }, [subscriptions, currentDate]);
 
   const formatMoney = (num: number) => new Intl.NumberFormat(dateLocale, { style: 'currency', currency: config.currencyCode }).format(num);
 
@@ -120,20 +139,20 @@ export const Stats: React.FC<StatsProps> = ({ subscriptions, currentDate }) => {
         <div className="mt-auto">
           {stats.nextPayment ? (
             <div className="flex items-center gap-4 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800/50">
-               {stats.nextPayment.logo ? (
-                  <img src={stats.nextPayment.logo} alt="" className="w-10 h-10 rounded-xl object-contain bg-white p-1" />
+               {stats.nextPayment.sub.logo ? (
+                  <img src={stats.nextPayment.sub.logo} alt="" className="w-10 h-10 rounded-xl object-contain bg-white p-1" />
                ) : (
                   <div className="w-10 h-10 rounded-xl bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center font-bold text-zinc-500 text-xs">
-                     {stats.nextPayment.name.substring(0,2)}
+                     {stats.nextPayment.sub.name.substring(0,2)}
                   </div>
                )}
                <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline">
-                    <h4 className="font-bold text-zinc-900 dark:text-white truncate pr-2">{stats.nextPayment.name}</h4>
-                    <span className="text-sm font-bold text-zinc-900 dark:text-white">{formatMoney(stats.nextPayment.price)}</span>
+                    <h4 className="font-bold text-zinc-900 dark:text-white truncate pr-2">{stats.nextPayment.sub.name}</h4>
+                    <span className="text-sm font-bold text-zinc-900 dark:text-white">{formatMoney(stats.nextPayment.sub.price)}</span>
                   </div>
                   <p className="text-xs text-zinc-500 font-medium">
-                    {t('stats.on')} {stats.nextPayment.day} {currentDate.toLocaleDateString(dateLocale, { month: 'long' })}
+                    {t('stats.on')} {stats.nextPayment.date} {currentDate.toLocaleDateString(dateLocale, { month: 'long' })}
                   </p>
                </div>
             </div>

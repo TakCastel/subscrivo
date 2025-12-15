@@ -6,6 +6,7 @@ import { Calendar } from './components/Calendar';
 import { Stats } from './components/Stats';
 import { SubscriptionForm } from './components/SubscriptionForm';
 import { SubscriptionList } from './components/SubscriptionList';
+import { ConfirmModal } from './components/ConfirmModal'; // Import modal
 import { Subscription, CountryCode } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { COUNTRIES } from './constants';
@@ -51,6 +52,9 @@ const AppContent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSub, setEditingSub] = useState<Subscription | null>(null);
   const [initialDay, setInitialDay] = useState<number | undefined>(undefined);
+  
+  // Logic for Delete Modal
+  const [subToDelete, setSubToDelete] = useState<string | null>(null);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     // MIGRATION: Check old theme
@@ -103,12 +107,24 @@ const AppContent = () => {
     setSubscriptions(prev => prev.map(s => s.id === id ? { ...s, day: newDay } : s));
   };
 
-  const handleDeleteSubscription = (id: string) => {
-    if (window.confirm("Supprimer cet abonnement ?")) {
-      setSubscriptions(prev => prev.filter(s => s.id !== id));
-      return true;
+  // Request deletion (opens modal)
+  const handleDeleteRequest = (id: string) => {
+    setSubToDelete(id);
+  };
+
+  // Confirm deletion (executed by modal)
+  const confirmDelete = () => {
+    if (subToDelete) {
+      setSubscriptions(prev => prev.filter(s => s.id !== subToDelete));
+      
+      // If we deleted the item currently being edited in the form, close the form
+      if (editingSub?.id === subToDelete) {
+        setIsModalOpen(false);
+        setEditingSub(null);
+      }
+      
+      setSubToDelete(null);
     }
-    return false;
   };
 
   const openEdit = (sub: Subscription) => {
@@ -266,7 +282,7 @@ const AppContent = () => {
             <SubscriptionList 
               subscriptions={subscriptions} 
               onEdit={openEdit}
-              onDelete={handleDeleteSubscription}
+              onDelete={handleDeleteRequest}
             />
           </div>
         </div>
@@ -278,7 +294,13 @@ const AppContent = () => {
         onSave={handleAddSubscription}
         editData={editingSub}
         initialDay={initialDay}
-        onDelete={handleDeleteSubscription}
+        onDelete={handleDeleteRequest}
+      />
+
+      <ConfirmModal 
+        isOpen={!!subToDelete}
+        onClose={() => setSubToDelete(null)}
+        onConfirm={confirmDelete}
       />
     </div>
   );

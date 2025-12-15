@@ -2,13 +2,19 @@ export interface Subscription {
   id: string;
   name: string;
   price: number;
-  day: number; // 1-31
+  day: number; // 1-31 for Monthly, 0-6 for Weekly (0=Sunday)
+  recurrence: Recurrence;
   category: Category;
   color: string;
   logo?: string;
   domain?: string; // Pour récupérer le logo officiel via clearbit/google
   description?: string;
   currency?: string;
+}
+
+export enum Recurrence {
+  MONTHLY = 'monthly',
+  WEEKLY = 'weekly'
 }
 
 export enum Category {

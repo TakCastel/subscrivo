@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Subscription } from '../types';
+import { Subscription, Recurrence } from '../types';
 import { Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ServiceLogo } from './ServiceLogo';
 
@@ -47,8 +47,18 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
     weekDays.push(addDays(start, i).toLocaleDateString(dateLocale, { weekday: 'short' }));
   }
 
-  const getSubsForDay = (day: number) => {
-    return subscriptions.filter(s => s.day === day);
+  const getSubsForDay = (dayOfMonth: number) => {
+     // Determine the day of week for this specific date (e.g., is the 15th a Monday?)
+     const currentDayDate = new Date(year, month, dayOfMonth);
+     const dayOfWeek = currentDayDate.getDay();
+
+     return subscriptions.filter(s => {
+        if (s.recurrence === Recurrence.WEEKLY) {
+            return s.day === dayOfWeek;
+        }
+        // Default Monthly
+        return s.day === dayOfMonth;
+     });
   };
 
   const handleDragStart = (e: React.DragEvent, subId: string) => {
@@ -71,12 +81,17 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
     setDragOverDay(null);
     const subId = e.dataTransfer.getData('subId');
     if (subId && onMoveSubscription) {
+        // Warning: Moving a weekly subscription via drag/drop in a monthly view is ambiguous.
+        // For now, assume it converts to monthly or changes the weekly day?
+        // Implementation simplifiée: on passe juste le nouveau jour du mois.
+        // App.tsx devra gérer si c'est un changement de date mensuelle.
         onMoveSubscription(subId, day);
     }
   };
 
   const blanks = Array(startingDayIndex).fill(null);
   const days = Array.from({ length: daysCount }, (_, i) => i + 1);
+  const monthKey = `${year}-${month}`;
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-[32px] shadow-soft dark:shadow-none border border-zinc-100 dark:border-zinc-800 p-6">
@@ -90,7 +105,13 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-7 gap-2 auto-rows-fr">
+      <motion.div 
+        key={monthKey}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="grid grid-cols-7 gap-2 auto-rows-fr"
+      >
         {blanks.map((_, i) => (
           <div key={`blank-${i}`} className="min-h-[100px]" />
         ))}
@@ -102,13 +123,12 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
                           year === new Date().getFullYear();
           const isDragTarget = dragOverDay === day;
 
+          // Check if we should use grid layout (more than 2 items)
+          const useGridLayout = daysSubs.length > 2;
+
           return (
-            <motion.div 
-              layout
+            <div
               key={`day-${day}`} 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
               className={`
                 min-h-[100px] p-2 rounded-2xl relative group transition-all duration-200 border
                 ${isToday 
@@ -142,11 +162,10 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
               </div>
 
               {/* Items Container */}
-              <div className="flex flex-col gap-1.5">
+              <div className={`flex ${useGridLayout ? 'grid grid-cols-2 gap-1.5' : 'flex-col gap-1.5'}`}>
                 {daysSubs.map(sub => (
                   <motion.div
-                    layoutId={`sub-${sub.id}`}
-                    key={sub.id}
+                    key={`${sub.id}-${day}`} // Unique key for recursives in same month
                     draggable
                     onDragStart={(e) => handleDragStart(e, sub.id)}
                     onClick={(e) => {
@@ -155,9 +174,7 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
                     }}
                     className={`
                       cursor-grab active:cursor-grabbing
-                      flex items-center gap-2 
-                      p-1.5 pr-2.5
-                      rounded-full
+                      ${useGridLayout ? 'aspect-square justify-center p-1 rounded-xl' : 'flex items-center gap-2 p-1.5 pr-2.5 rounded-full'}
                       text-xs font-bold 
                       shadow-sm hover:shadow-md transition-all z-10 relative
                       ${isToday 
@@ -166,8 +183,10 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
                       }
                     `}
                     title={`${sub.name} - ${sub.price}${config.currency}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <div className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 bg-white">
+                    <div className={`${useGridLayout ? 'w-6 h-6' : 'w-4 h-4'} rounded-full overflow-hidden flex-shrink-0 bg-white`}>
                         <ServiceLogo 
                             name={sub.name} 
                             logo={sub.logo}
@@ -175,14 +194,14 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
                             color={sub.color} 
                         />
                     </div>
-                    <span className="truncate hidden sm:inline">{sub.name}</span>
+                    {!useGridLayout && <span className="truncate hidden sm:inline">{sub.name}</span>}
                   </motion.div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           );
         })}
-      </div>
+      </motion.div>
     </div>
   );
 };
