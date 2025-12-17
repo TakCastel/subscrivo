@@ -1,0 +1,48 @@
+<!-- Chargement des styles globaux pour Storybook -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>S</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+        },
+        colors: {
+          primary: '#6366f1',
+          secondary: '#a855f7',
+          zinc: {
+            850: '#1f2023',
+            950: '#09090b',
+          }
+        },
+        boxShadow: {
+          'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+          'glow': '0 0 15px rgba(99, 102, 241, 0.3)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body {
+    background-color: #FAFAFA;
+    transition: background-color 0.3s ease;
+  }
+  .dark body {
+    background-color: #000000;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.3);
+    border-radius: 20px;
+  }
+</style>
+

@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Moon, Sun, ChevronDown } from 'lucide-react';
 
 // Components & Types
-import { Calendar } from './components/Calendar';
-import { Stats } from './components/Stats';
-import { SubscriptionForm } from './components/SubscriptionForm';
-import { SubscriptionList } from './components/SubscriptionList';
-import { ConfirmModal } from './components/ConfirmModal'; // Import modal
-import { Subscription, CountryCode } from './types';
+import { Calendar } from './features/subscriptions/components/Calendar';
+import { Stats } from './features/subscriptions/components/Stats';
+import { SubscriptionForm } from './features/subscriptions/components/SubscriptionForm';
+import { SubscriptionList } from './features/subscriptions/components/SubscriptionList';
+import { ConfirmModal } from './features/subscriptions/components/ConfirmModal';
+import { Subscription, CountryCode } from './shared/config/types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { COUNTRIES } from './constants';
+import { COUNTRIES } from './shared/config/constants';
+import { loadSubscriptions, saveSubscriptions, loadTheme, saveTheme } from './services/storageService';
+import { IconButton } from './shared/ui/IconButton';
 
 // Date Helpers
 const addMonths = (date: Date, amount: number) => {
@@ -30,44 +32,7 @@ const AppContent = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Initialisation paresseuse avec migration des données
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => {
-    try {
-      // MIGRATION LOGIC: Submeez -> Velora -> Subcal -> Subscrivo
-
-      // 1. Check Submeez (Most recent previous name)
-      const oldSubmeez = localStorage.getItem('submeez_data');
-      if (oldSubmeez) {
-        console.log("Migrating data from Submeez to Subscrivo...");
-        localStorage.setItem('subscrivo_data', oldSubmeez);
-        localStorage.removeItem('submeez_data');
-        return JSON.parse(oldSubmeez);
-      }
-
-      // 2. Check Velora
-      const oldVelora = localStorage.getItem('velora_data');
-      if (oldVelora) {
-        console.log("Migrating data from Velora to Subscrivo...");
-        localStorage.setItem('subscrivo_data', oldVelora);
-        localStorage.removeItem('velora_data');
-        return JSON.parse(oldVelora);
-      }
-
-      // 3. Check Subcal
-      const oldSubcal = localStorage.getItem('subcal_data');
-      if (oldSubcal) {
-        console.log("Migrating data from Subcal to Subscrivo...");
-        localStorage.setItem('subscrivo_data', oldSubcal);
-        localStorage.removeItem('subcal_data');
-        return JSON.parse(oldSubcal);
-      }
-
-      const saved = localStorage.getItem('subscrivo_data');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error("Failed to parse subscriptions", e);
-      return [];
-    }
-  });
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => loadSubscriptions());
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSub, setEditingSub] = useState<Subscription | null>(null);
@@ -76,32 +41,12 @@ const AppContent = () => {
   // Logic for Delete Modal
   const [subToDelete, setSubToDelete] = useState<string | null>(null);
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    // MIGRATION THEME
-    const oldSubmeezTheme = localStorage.getItem('submeez_theme') as 'light' | 'dark';
-    if (oldSubmeezTheme) {
-        localStorage.setItem('subscrivo_theme', oldSubmeezTheme);
-        localStorage.removeItem('submeez_theme');
-        return oldSubmeezTheme;
-    }
-
-    const oldVeloraTheme = localStorage.getItem('velora_theme') as 'light' | 'dark';
-    if (oldVeloraTheme) {
-        localStorage.setItem('subscrivo_theme', oldVeloraTheme);
-        localStorage.removeItem('velora_theme');
-        return oldVeloraTheme;
-    }
-
-    const savedTheme = localStorage.getItem('subscrivo_theme') as 'light' | 'dark';
-    if (savedTheme) return savedTheme;
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-    return 'light';
-  });
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => loadTheme());
 
   const [showCountryMenu, setShowCountryMenu] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('subscrivo_data', JSON.stringify(subscriptions));
+    saveSubscriptions(subscriptions);
   }, [subscriptions]);
 
   useEffect(() => {
@@ -110,7 +55,7 @@ const AppContent = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('subscrivo_theme', theme);
+    saveTheme(theme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -238,19 +183,17 @@ const AppContent = () => {
 
               <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800" />
 
-              <button 
-                onClick={toggleTheme}
-                className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition-colors"
-              >
+              <IconButton onClick={toggleTheme} aria-label="Basculer le thème">
                 {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              </button>
+              </IconButton>
 
-              <button 
+              <IconButton 
                 onClick={openAdd}
-                className="p-2 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-full hover:scale-105 transition-transform shadow-lg shadow-zinc-900/20"
+                aria-label="Ajouter un abonnement"
+                variant="solid"
               >
                 <Plus size={20} strokeWidth={3} />
-              </button>
+              </IconButton>
             </div>
           </div>
         </div>

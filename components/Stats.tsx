@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { Subscription, Recurrence } from '../types';
+import { Subscription } from '../types';
 import { Wallet, TrendingUp, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ServiceLogo } from './ServiceLogo';
+import { computeMonthlyStats } from '../utils/stats';
 
 interface StatsProps {
   subscriptions: Subscription[];
@@ -11,52 +12,12 @@ interface StatsProps {
 }
 
 export const Stats: React.FC<StatsProps> = ({ subscriptions, currentDate }) => {
-  const currentDay = currentDate.getDate();
   const { t, config, dateLocale } = useLanguage();
 
-  const stats = useMemo(() => {
-    let totalCost = 0;
-    let paidThisMonth = 0;
-    let remainingThisMonth = 0;
-    let nextPayment: { sub: Subscription, date: number } | null = null;
-    let minDiff = 32;
-
-    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-    
-    // Iterate through every day of the displayed month to calculate true cost
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
-        const dayOfWeek = dateObj.getDay();
-
-        subscriptions.forEach(sub => {
-            let matches = false;
-            
-            if (sub.recurrence === Recurrence.WEEKLY) {
-                if (sub.day === dayOfWeek) matches = true;
-            } else {
-                // Monthly
-                if (sub.day === d) matches = true;
-            }
-
-            if (matches) {
-                totalCost += sub.price;
-                if (d < currentDay) {
-                    paidThisMonth += sub.price;
-                } else {
-                    remainingThisMonth += sub.price;
-                    const diff = d - currentDay;
-                    // Find nearest next payment
-                    if (diff >= 0 && diff < minDiff) {
-                        minDiff = diff;
-                        nextPayment = { sub, date: d };
-                    }
-                }
-            }
-        });
-    }
-
-    return { totalCost, paidThisMonth, remainingThisMonth, nextPayment };
-  }, [subscriptions, currentDate]);
+  const stats = useMemo(
+    () => computeMonthlyStats(subscriptions, currentDate),
+    [subscriptions, currentDate],
+  );
 
   const formatMoney = (num: number) => new Intl.NumberFormat(dateLocale, { style: 'currency', currency: config.currencyCode }).format(num);
 

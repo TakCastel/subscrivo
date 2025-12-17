@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { CountryCode, CountryConfig, Category } from '../types';
-import { COUNTRIES } from '../constants';
+import { CountryCode, CountryConfig, Category } from '../shared/config/types';
+import { COUNTRIES } from '../shared/config/constants';
+import { loadCountry, saveCountry } from '../services/storageService';
 
 // Mapping des locales BCP 47 pour Intl
 const DATE_LOCALES: Record<CountryCode, string> = {
@@ -387,45 +388,15 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [country, setCountry] = useState<CountryCode>('FR');
 
   useEffect(() => {
-    // MIGRATION LOGIC: Check old keys from previous names (Velora, Submeez, Subcal)
-    
-    // 1. Try migration from Submeez (most recent)
-    const oldSubmeez = localStorage.getItem('submeez_country') as CountryCode;
-    if (oldSubmeez) {
-        localStorage.setItem('subscrivo_country', oldSubmeez);
-        localStorage.removeItem('submeez_country');
-        setCountry(oldSubmeez);
-        return;
+    const loaded = loadCountry();
+    if (loaded && COUNTRIES.find((c) => c.code === loaded)) {
+      setCountry(loaded);
     }
-
-    // 2. Try migration from Velora
-    const oldVelora = localStorage.getItem('velora_country') as CountryCode;
-    if (oldVelora) {
-        localStorage.setItem('subscrivo_country', oldVelora);
-        localStorage.removeItem('velora_country');
-        setCountry(oldVelora);
-        return;
-    }
-
-    // 3. Try migration from older Subcal
-    const oldSubcal = localStorage.getItem('subcal_country') as CountryCode;
-    if (oldSubcal) {
-        localStorage.setItem('subscrivo_country', oldSubcal);
-        localStorage.removeItem('subcal_country');
-        setCountry(oldSubcal);
-        return;
-    }
-    
-    // 4. Load current Subscrivo key
-    const saved = localStorage.getItem('subscrivo_country') as CountryCode;
-    if (saved && COUNTRIES.find(c => c.code === saved)) {
-      setCountry(saved);
-    } 
   }, []);
 
   const handleSetCountry = (code: CountryCode) => {
     setCountry(code);
-    localStorage.setItem('subscrivo_country', code);
+    saveCountry(code);
   };
 
   const t = (key: TranslationKey): string => {

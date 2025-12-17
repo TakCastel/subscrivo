@@ -2,19 +2,53 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Subscrivo
 
-This contains everything you need to run your app locally.
+Gestionnaire d’abonnements multilingue, maintenant outillé comme un vrai produit open-source.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1mTK_hfu8UlgmVomCc8a89bxZBJHWmmJ-
+## Démarrage
 
-## Run Locally
+Prérequis : Node.js >= 18
 
-**Prerequisites:**  Node.js
+- Installer les dépendances : `npm install`
+- Lancer le dev server : `npm run dev`
+- Lancer les tests : `npm test`
+- Lancer Storybook : `npm run storybook`
 
+## Tests & Qualité
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- Tests unitaires/intégration : `npm test` (vitest + RTL)
+- CI : un workflow GitHub Actions échoue si les tests ne passent pas.
+
+## Storybook
+
+Un design system minimal (Button, IconButton, Card, Modal, Input, Select, Badge) est documenté dans Storybook : `npm run storybook`. Construire : `npm run storybook:build`.
+
+## Versionning
+
+- La version suit `package.json`. Chaque modification (incluant celles faites par une IA) doit incrémenter la version (patch/minor/major selon l’impact).
+- Convention suggérée : correctifs = patch, features = minor, breaking = major.
+- Mettez à jour ce fichier et le changelog associé avant merge.
+
+## Licence & usage
+
+Projet sous licence **CC BY-NC 4.0** : utilisation non commerciale uniquement, attribution requise. Voir `LICENSE`.
+
+## Support
+
+Si le projet vous aide : [Buy me a coffee](https://buymeacoffee.com/ttlh)
+
+## Déploiement / Production
+
+- Build production : `npm run build`
+- L’artefact `dist` peut être servi statiquement (Vite).
+
+## PWA & offline léger
+
+- Manifest + service worker (`public/manifest.webmanifest`, `public/sw.js`).
+- Installation mobile possible (standalone) et consultation offline (cache des assets + fallback sur `index.html` pour le calendrier/statistiques).
+- En dev/preview, ouvrir l’app puis “Ajouter à l’écran d’accueil” sur mobile compatible.
+
+## Configuration Gemini
+
+Si vous utilisez l’intégration Gemini, renseignez `GEMINI_API_KEY` dans `.env.local`.

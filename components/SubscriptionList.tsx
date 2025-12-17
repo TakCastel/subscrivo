@@ -5,6 +5,7 @@ import { Edit2, ChevronRight, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ServiceLogo } from './ServiceLogo';
+import { sortSubscriptions } from '../utils/subscriptions';
 
 interface Props {
   subscriptions: Subscription[];
@@ -15,12 +16,7 @@ interface Props {
 export const SubscriptionList: React.FC<Props> = ({ subscriptions, onEdit, onDelete }) => {
   const { t, config, getCategoryLabel, dateLocale } = useLanguage();
   
-  // Sort Logic: Monthly by date, Weekly by day of week
-  const sortedSubs = [...subscriptions].sort((a, b) => {
-    // Basic sorting for now, can be improved to mix monthly/weekly visually
-    if (a.recurrence === b.recurrence) return a.day - b.day;
-    return a.recurrence === Recurrence.WEEKLY ? 1 : -1;
-  });
+  const sortedSubs = sortSubscriptions(subscriptions);
   
   const formatMoney = (num: number) => new Intl.NumberFormat(dateLocale, { style: 'currency', currency: config.currencyCode }).format(num);
 

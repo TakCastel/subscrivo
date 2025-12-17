@@ -146,6 +146,7 @@ export const Calendar: React.FC<CalendarProps> = ({ currentDate, subscriptions, 
                    onAdd(day);
                 }
               }}
+              data-testid={`day-cell-${day}`}
             >
               <div className="flex justify-between items-start mb-2 pointer-events-none">
                  <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full ${isToday ? 'text-white' : 'text-zinc-500 dark:text-zinc-400'}`}>
