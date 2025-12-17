@@ -49,6 +49,6 @@ Si le projet vous aide : [Buy me a coffee](https://buymeacoffee.com/ttlh)
 - Installation mobile possible (standalone) et consultation offline (cache des assets + fallback sur `index.html` pour le calendrier/statistiques).
 - En dev/preview, ouvrir l’app puis “Ajouter à l’écran d’accueil” sur mobile compatible.
 
-## Configuration Gemini
+## Variables d’environnement
 
-Si vous utilisez l’intégration Gemini, renseignez `GEMINI_API_KEY` dans `.env.local`.
+L’application n’exige plus de clé AI. Aucune configuration externe requise par défaut.
